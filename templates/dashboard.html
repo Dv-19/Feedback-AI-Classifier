@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feedback Analysis Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tachometer-alt"></i> Feedback Analysis Dashboard</h1>
+        </header>
+
+        <main>
+            <section class="card">
+                <h2>Feedback Trends Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>All Feedback Data</h2>
+
+                <div class="actions-container">
+                    <form action="{{ url_for('handle_upload') }}" method="post" enctype="multipart/form-data" class="upload-form">
+                         <h4><i class="fas fa-upload"></i> Upload New Feedback File</h4>
+                         <input type="file" name="file" accept=".csv,.txt" required>
+                         <button type="submit" class="btn btn-primary">Upload & Process</button>
+                    </form>
+                    <div class="export-section">
+                        <h4><i class="fas fa-download"></i> Export All Data</h4>
+                        <a href="{{ url_for('export_data') }}" class="btn btn-secondary">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </a>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="flash-message">{{ messages[0] }}</div>
+                  {% endif %}
+                {% endwith %}
+
+                <div class="table-container">
+                    <table id="feedbackTable" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Feedback</th>
+                                <th>Category</th>
+                                <th>Sentiment</th>
+                                <th>Urgency</th>
+                                <th>Keywords</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feedback in feedbacks.items %}
+                            <tr>
+                                <td>{{ feedback.timestamp.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ feedback.text }}</td>
+                                <td><span class="category-badge {{ feedback.category|lower }}">{{ feedback.category }}</span></td>
+                                <td><span class="sentiment-badge {{ feedback.sentiment|lower }}">{{ feedback.sentiment }}</span></td>
+                                <td><span class="urgency-badge {{ feedback.urgency|lower }}">{{ feedback.urgency }}</span></td>
+                                <td>{{ feedback.keywords }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    {% if feedbacks.has_prev %}
+                        <a href="{{ url_for('dashboard', page=feedbacks.prev_num) }}" class="btn btn-sample">&laquo; Newer</a>
+                    {% endif %}
+                    <span>Page {{ feedbacks.page }} of {{ feedbacks.pages }}</span>
+                    {% if feedbacks.has_next %}
+                        <a href="{{ url_for('dashboard', page=feedbacks.next_num) }}" class="btn btn-sample">Older &raquo;</a>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    <script>
+        // Initialize the interactive table using DataTables
+        $(document).ready(function() {
+            $('#feedbackTable').DataTable({
+                "paging": false, // We use Flask's pagination, so disable DataTables' one
+                "info": false,
+                "order": [[ 0, "desc" ]] // Order by the first column (Date) descending
+            });
+        });
+
+        // Fetch data from our API and render the Trend Chart
+        fetch("{{ url_for('trends_data') }}")
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('trendsChart').getContext('2d');
+                const colors = {
+                    'Academics': 'rgba(54, 162, 235, 0.7)',
+                    'Facilities': 'rgba(75, 192, 192, 0.7)',
+                    'Administration': 'rgba(255, 206, 86, 0.7)'
+                };
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: Object.keys(data.datasets).map(category => ({
+                            label: category,
+                            data: data.datasets[category],
+                            backgroundColor: colors[category] || 'rgba(201, 203, 207, 0.7)',
+                        }))
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, stacked: true }, x: { stacked: true } },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            });
+    </script>
+</body>
+</html>

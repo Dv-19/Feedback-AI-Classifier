@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classification Results</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-bar"></i> Classification Results</h1>
+            <p class="subtitle">Analysis for file: <strong>{{ filename }}</strong></p>
+        </header>
+
+        <main>
+            {% set stats = { 'categories': {}, 'sentiments': {} } %}
+            {% for r in results %}
+                {% set cat = r.category %}
+                {% set sen = r.sentiment %}
+                {% set _ = stats.categories.update({cat: stats.categories.get(cat, 0) + 1}) %}
+                {% set _ = stats.sentiments.update({sen: stats.sentiments.get(sen, 0) + 1}) %}
+            {% endfor %}
+
+            <section class="card">
+                <h2><i class="fas fa-info-circle"></i> Summary</h2>
+                <div class="summary-grid">
+                    <div class="stat-card"><h3>{{ results|length }}</h3><p>Total Feedbacks</p></div>
+                    {% for category, count in stats.categories.items() %}
+                        <div class="stat-card"><h3>{{ count }}</h3><p>{{ category }}</p></div>
+                    {% endfor %}
+                    {% for sentiment, count in stats.sentiments.items() %}
+                        <div class="stat-card"><h3>{{ count }}</h3><p>{{ sentiment }}</p></div>
+                    {% endfor %}
+                </div>
+            </section>
+            
+            <section class="card">
+                <h2><i class="fas fa-chart-pie"></i> Results Graph</h2>
+                <div class="chart-container">
+                    <canvas id="resultsChart"></canvas>
+                </div>
+            </section>
+            
+            <div class="card">
+                <h2><i class="fas fa-table"></i> Detailed Results</h2>
+                <div class="table-header">
+                    <a href="{{ url_for('export_results') }}" class="btn btn-secondary">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </a>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Feedback</th>
+                                <th>Category</th>
+                                <th>Sentiment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in results %}
+                            <tr>
+                                <td>{{ r.index + 1 }}</td>
+                                <td>{{ r.original_text }}</td>
+                                <td><span class="category-badge {{ r.category|lower }}">{{ r.category }}</span></td>
+                                <td><span class="sentiment-badge {{ r.sentiment|lower }}">{{ r.sentiment }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Classifier
+                </a>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            
+            // Data from Jinja2
+            const categoryData = {{ stats.categories|tojson }};
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryData),
+                    datasets: [{
+                        label: 'Categories',
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Feedback Distribution by Category' }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# requirements.txt
+flask
+pandas
+torch>=2.1
+transformers
+tf-keras
+Flask-SQLAlchemy
+openpyxl

@@ -1,0 +1,40 @@
+# .gitignore
+
+# Python virtual environment
+venv/
+__pycache__/
+
+# Database file
+feedback.db
+
+# Uploads folder
+uploads/
+
+# OS-specific files
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
